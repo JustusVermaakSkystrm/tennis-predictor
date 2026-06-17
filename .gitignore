@@ -1,0 +1,10 @@
+# Data is fetched, not vendored — re-run scripts/fetch_data.sh / fetch_odds.sh
+data/sackmann/
+data/fallback/
+data/odds/
+
+__pycache__/
+*.pyc
+.DS_Store
+out/
+.venv/

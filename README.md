@@ -110,12 +110,26 @@ python -m scripts.project_draw           # Wimbledon 2026 bracket -> out/
 python -m scripts.build_site             # regenerate the live site -> docs/index.html
 ```
 
+## Live site & auto-update
+
+The site (`tennis/site.py` → `docs/index.html`) is served via GitHub Pages and rebuilt
+by `.github/workflows/update.yml` every 6 hours: fetch data + odds → `build_site` →
+commit `docs/` only if it changed → push (Pages redeploys). Trigger manually with
+`gh workflow run update-site`.
+
+**The featured event rolls automatically.** `tennis/calendar.py` knows the four Grand
+Slams; the site always projects the next/current one *on its surface*. When Wimbledon
+(grass) finishes, the projection and form tables switch themselves to **US Open** (hard),
+then Australian Open, then Roland Garros (clay) — no manual edits. The favourite even
+flips correctly by surface (Alcaraz on grass → Sinner on hard).
+
 ## Roadmap
 
 - [x] Surface-weighted Elo + held-out validation vs ranking baseline (both tours)
-- [x] Draw (bracket) simulator + SVG `viz.py` (32/64/128) + Wimbledon 2026 projection
+- [x] Draw (bracket) simulator + SVG `viz.py` (32/64/128) + auto-rolling Slam projection
 - [x] tennis-data.co.uk odds → market / CLV benchmark + model scorecard
+- [x] GitHub Pages site + scheduled auto-update workflow
 - [ ] Serve-based hierarchical model (point→game→set→match Markov) for set/game/handicap markets; Bo3 vs Bo5 — needs serve-stat sources (TML-Database / AndreaQuirozO)
+- [ ] Ingest the *official* draw when published (replace seed-by-rating with real slots)
 - [ ] Lower-tier (Challenger/ITF) odds to test the real edge thesis
 - [ ] Rating-uncertainty shrinkage (fix low-n spikes e.g. Jodar) + retirement/walkover ledger
-- [ ] Hourly auto-update workflow + GitHub Pages site (TennisCourtLog refreshes daily)

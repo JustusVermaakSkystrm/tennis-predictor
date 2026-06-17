@@ -1,0 +1,545 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tennis Model — ATP & WTA prediction engine</title>
+<meta name="description" content="Surface-weighted Elo predictions for ATP & WTA tennis, with a path-to-the-final draw projection and an honest market/CLV benchmark.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1117; --card:#161b22; --txt:#e6edf3; --mut:#8b949e; --line:#30363d;
+  --accent:#2f81f7; --accent2:#3fb950; --barbg:#21262d; --font:'Inter',system-ui,-apple-system,sans-serif;
+}
+*{box-sizing:border-box} html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);line-height:1.5}
+.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
+header{padding:64px 0 40px;border-bottom:1px solid var(--line)}
+.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px}
+h1{font-size:clamp(30px,5vw,46px);font-weight:800;margin:10px 0 8px;letter-spacing:-.02em}
+.lede{color:var(--mut);font-size:18px;max-width:620px;margin:0}
+.meta{color:var(--mut);font-size:13px;margin-top:18px;display:flex;gap:18px;flex-wrap:wrap}
+.meta b{color:var(--txt);font-weight:600}
+section{padding:48px 0;border-bottom:1px solid var(--line)}
+h2{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
+.sub{color:var(--mut);margin:0 0 22px;max-width:640px}
+svg{width:100%;height:auto;display:block;border-radius:12px}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.card h3{margin:0 0 12px;font-size:16px;font-weight:700}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
+td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
+td.lead{font-weight:600;color:var(--txt)}
+.rank{color:var(--mut);width:26px}
+details{margin-top:12px} summary{color:var(--mut);cursor:pointer;font-size:14px;padding:6px 0}
+.note{color:var(--mut);font-size:15px;line-height:1.65} .note b{color:var(--txt)}
+.pill{display:inline-block;background:var(--barbg);border:1px solid var(--line);border-radius:999px;
+  padding:3px 11px;font-size:12px;color:var(--mut);margin:2px 4px 2px 0}
+.win{color:var(--accent2);font-weight:700}
+footer{padding:36px 0 64px;color:var(--mut);font-size:13px}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+</style></head>
+<body><div class="wrap">
+
+<header>
+  <div class="eyebrow">ATP · WTA · surface-weighted Elo</div>
+  <h1>Tennis prediction model</h1>
+  <p class="lede">Ratings that beat the official rankings, path-to-the-final draw projections,
+  and an honest benchmark against the betting market.</p>
+  <div class="meta">
+    <span>Data through <b>2026-06-14</b></span>
+    <span><b>360k+</b> matches, 1968–2026</span>
+    <span>Both tours</span>
+  </div>
+</header>
+
+<section id="scorecard">
+  <h2>How good is it?</h2>
+  <p class="sub">Two benchmarks, held out from training. Green marks the winner of each row.</p>
+  <svg viewBox="0 0 736 330" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+  .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
+  .txt{fill:var(--txt,#e6edf3);font-family:var(--font,'Inter',system-ui,sans-serif)}
+  .mut{fill:var(--mut,#8b949e)} .barbg{fill:var(--barbg,#21262d)}
+  .bar{fill:var(--accent,#2f81f7)} .bar2{fill:var(--accent2,#3fb950)}
+  .line{stroke:var(--line,#30363d);stroke-width:1.5;fill:none}
+  .seed{fill:var(--mut,#8b949e)}
+</style>
+
+<rect class="bg" x="0" y="0" width="736" height="330" rx="12"/>
+<text class="txt" x="18" y="34" font-size="20" font-weight="700">Skill vs the ranking &amp; the market</text>
+<rect class="card" x="18" y="52" width="340" height="248" rx="10"/>
+<text class="txt" x="34" y="76" font-size="15" font-weight="700">ATP</text>
+<text class="mut" x="342" y="76" font-size="11" text-anchor="end">model · benchmark</text>
+<text class="mut" x="34" y="104" font-size="12">Log-loss vs ranking</text>
+<text class="bar2" x="208" y="104" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.6218</text>
+<text x="342" y="104" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.6247</text>
+<text class="mut" x="34" y="134" font-size="12">Accuracy vs ranking</text>
+<text class="bar2" x="208" y="134" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.649</text>
+<text x="342" y="134" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.6432</text>
+<text class="mut" x="34" y="164" font-size="12">Log-loss vs market</text>
+<text class="txt" x="208" y="164" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">0.6252</text>
+<text x="342" y="164" font-size="13" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.5913</text>
+<text class="mut" x="34" y="194" font-size="12">Accuracy vs market</text>
+<text class="txt" x="208" y="194" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">0.6423</text>
+<text x="342" y="194" font-size="13" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.6747</text>
+<text class="mut" x="34" y="224" font-size="12">Value ROI (flat, edge 5%)</text>
+<text class="txt" x="208" y="224" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">-12.6%</text>
+<text x="342" y="224" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.0%</text>
+<text class="mut" x="34" y="254" font-size="12">Avg CLV vs close</text>
+<text class="txt" x="208" y="254" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">-2.9%</text>
+<text x="342" y="254" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.0%</text>
+<rect class="card" x="378" y="52" width="340" height="248" rx="10"/>
+<text class="txt" x="394" y="76" font-size="15" font-weight="700">WTA</text>
+<text class="mut" x="702" y="76" font-size="11" text-anchor="end">model · benchmark</text>
+<text class="mut" x="394" y="104" font-size="12">Log-loss vs ranking</text>
+<text class="bar2" x="568" y="104" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.6216</text>
+<text x="702" y="104" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.6447</text>
+<text class="mut" x="394" y="134" font-size="12">Accuracy vs ranking</text>
+<text class="bar2" x="568" y="134" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.6484</text>
+<text x="702" y="134" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.6162</text>
+<text class="mut" x="394" y="164" font-size="12">Log-loss vs market</text>
+<text class="txt" x="568" y="164" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">0.6233</text>
+<text x="702" y="164" font-size="13" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.5931</text>
+<text class="mut" x="394" y="194" font-size="12">Accuracy vs market</text>
+<text class="txt" x="568" y="194" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">0.6482</text>
+<text x="702" y="194" font-size="13" text-anchor="end" style="fill:var(--accent2,#3fb950)">0.6741</text>
+<text class="mut" x="394" y="224" font-size="12">Value ROI (flat, edge 5%)</text>
+<text class="txt" x="568" y="224" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">-13.4%</text>
+<text x="702" y="224" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.0%</text>
+<text class="mut" x="394" y="254" font-size="12">Avg CLV vs close</text>
+<text class="txt" x="568" y="254" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">-3.7%</text>
+<text x="702" y="254" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.0%</text>
+</svg>
+  <p class="note" style="margin-top:16px">
+  <b>Versus the ranking</b> — surface-weighted Elo beats the official ATP/WTA ranking on held-out
+  matches (ATP 0.6218 vs 0.6247 log-loss;
+  WTA 0.6216 vs 0.6447).
+  <b>Versus the market</b> — on main-tour events the de-vigged Pinnacle close is sharper, and a naive
+  value strategy returns negative ROI and negative CLV. That's the honest result: a pure-ratings model
+  with no serve, injury or matchup signal should not beat the closing line where the market is efficient.
+  Edge is expected in lower tiers (Challenger/ITF) and early rounds — not tested by this main-tour odds source.</p>
+</section>
+
+<section id="wimbledon">
+  <h2>Wimbledon 2026 — projection</h2>
+  <p class="sub">Monte Carlo bracket simulation on grass (ATP best-of-5, WTA best-of-3). Field seeded
+  by current rating — illustrative until the official draw is published.</p>
+  <div class="grid2"><div><div><svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+  .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
+  .txt{fill:var(--txt,#e6edf3);font-family:var(--font,'Inter',system-ui,sans-serif)}
+  .mut{fill:var(--mut,#8b949e)} .barbg{fill:var(--barbg,#21262d)}
+  .bar{fill:var(--accent,#2f81f7)} .bar2{fill:var(--accent2,#3fb950)}
+  .line{stroke:var(--line,#30363d);stroke-width:1.5;fill:none}
+  .seed{fill:var(--mut,#8b949e)}
+</style>
+
+<rect class="bg" x="0" y="0" width="720" height="380" rx="12"/>
+<text class="txt" x="16" y="30" font-size="20" font-weight="700">ATP — Gentlemen's Singles</text>
+<text class="mut" x="16" y="50" font-size="13">Grass · Bo5 · 32-draw · 40,000 sims</text>
+<text class="txt" x="16" y="83" font-size="14">1. Carlos Alcaraz</text>
+<rect class="barbg" x="230" y="70" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="70" width="400.0" height="16" rx="4"/>
+<text class="txt" x="638" y="83" font-size="13" font-weight="600">34.1%</text>
+<text class="txt" x="16" y="113" font-size="14">2. Jannik Sinner</text>
+<rect class="barbg" x="230" y="100" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="100" width="380.4" height="16" rx="4"/>
+<text class="txt" x="638" y="113" font-size="13" font-weight="600">32.4%</text>
+<text class="txt" x="16" y="143" font-size="14">3. Novak Djokovic</text>
+<rect class="barbg" x="230" y="130" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="130" width="90.7" height="16" rx="4"/>
+<text class="txt" x="638" y="143" font-size="13" font-weight="600">7.7%</text>
+<text class="txt" x="16" y="173" font-size="14">4. Rafael Jodar</text>
+<rect class="barbg" x="230" y="160" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="160" width="63.3" height="16" rx="4"/>
+<text class="txt" x="638" y="173" font-size="13" font-weight="600">5.4%</text>
+<text class="txt" x="16" y="203" font-size="14">5. Alexander Zverev</text>
+<rect class="barbg" x="230" y="190" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="190" width="38.5" height="16" rx="4"/>
+<text class="txt" x="638" y="203" font-size="13" font-weight="600">3.3%</text>
+<text class="txt" x="16" y="233" font-size="14">6. Taylor Fritz</text>
+<rect class="barbg" x="230" y="220" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="220" width="23.3" height="16" rx="4"/>
+<text class="txt" x="638" y="233" font-size="13" font-weight="600">2.0%</text>
+<text class="txt" x="16" y="263" font-size="14">7. Arthur Fils</text>
+<rect class="barbg" x="230" y="250" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="250" width="18.9" height="16" rx="4"/>
+<text class="txt" x="638" y="263" font-size="13" font-weight="600">1.6%</text>
+<text class="txt" x="16" y="293" font-size="14">8. Daniil Medvedev</text>
+<rect class="barbg" x="230" y="280" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="280" width="16.2" height="16" rx="4"/>
+<text class="txt" x="638" y="293" font-size="13" font-weight="600">1.4%</text>
+<text class="txt" x="16" y="323" font-size="14">9. Valentin Vacherot</text>
+<rect class="barbg" x="230" y="310" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="310" width="15.2" height="16" rx="4"/>
+<text class="txt" x="638" y="323" font-size="13" font-weight="600">1.3%</text>
+<text class="txt" x="16" y="353" font-size="14">10. Ben Shelton</text>
+<rect class="barbg" x="230" y="340" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="340" width="14.9" height="16" rx="4"/>
+<text class="txt" x="638" y="353" font-size="13" font-weight="600">1.3%</text>
+</svg></div><details><summary>seeded bracket (top 32)</summary><svg viewBox="0 0 1040 908" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+  .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
+  .txt{fill:var(--txt,#e6edf3);font-family:var(--font,'Inter',system-ui,sans-serif)}
+  .mut{fill:var(--mut,#8b949e)} .barbg{fill:var(--barbg,#21262d)}
+  .bar{fill:var(--accent,#2f81f7)} .bar2{fill:var(--accent2,#3fb950)}
+  .line{stroke:var(--line,#30363d);stroke-width:1.5;fill:none}
+  .seed{fill:var(--mut,#8b949e)}
+</style>
+
+<rect class="bg" x="0" y="0" width="1040" height="908" rx="12"/>
+<text class="txt" x="16" y="32" font-size="18" font-weight="700">ATP — Gentlemen's Singles — seeded bracket</text>
+<rect class="card" x="16" y="56" width="152" height="20" rx="4"/><text class="seed" x="22" y="70" font-size="10">1</text><text class="txt" x="40" y="70" font-size="11">Carlos Alcaraz</text><text class="mut" x="162" y="70" font-size="9" text-anchor="end">34%</text>
+<rect class="card" x="16" y="82" width="152" height="20" rx="4"/><text class="seed" x="22" y="96" font-size="10">32</text><text class="txt" x="40" y="96" font-size="11">Hubert Hurkacz</text>
+<rect class="card" x="16" y="108" width="152" height="20" rx="4"/><text class="seed" x="22" y="122" font-size="10">16</text><text class="txt" x="40" y="122" font-size="11">Jiri Lehecka</text>
+<rect class="card" x="16" y="134" width="152" height="20" rx="4"/><text class="seed" x="22" y="148" font-size="10">21</text><text class="txt" x="40" y="148" font-size="11">Flavio Cobolli</text>
+<rect class="card" x="16" y="160" width="152" height="20" rx="4"/><text class="seed" x="22" y="174" font-size="10">8</text><text class="txt" x="40" y="174" font-size="11">Daniil Medvedev</text><text class="mut" x="162" y="174" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="186" width="152" height="20" rx="4"/><text class="seed" x="22" y="200" font-size="10">25</text><text class="txt" x="40" y="200" font-size="11">Kamil Majchrzak</text>
+<rect class="card" x="16" y="212" width="152" height="20" rx="4"/><text class="seed" x="22" y="226" font-size="10">9</text><text class="txt" x="40" y="226" font-size="11">Valentin Vacherot</text><text class="mut" x="162" y="226" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="238" width="152" height="20" rx="4"/><text class="seed" x="22" y="252" font-size="10">26</text><text class="txt" x="40" y="252" font-size="11">Ignacio Buse</text>
+<rect class="card" x="16" y="264" width="152" height="20" rx="4"/><text class="seed" x="22" y="278" font-size="10">4</text><text class="txt" x="40" y="278" font-size="11">Rafael Jodar</text><text class="mut" x="162" y="278" font-size="9" text-anchor="end">5%</text>
+<rect class="card" x="16" y="290" width="152" height="20" rx="4"/><text class="seed" x="22" y="304" font-size="10">29</text><text class="txt" x="40" y="304" font-size="11">Joao Fonseca</text>
+<rect class="card" x="16" y="316" width="152" height="20" rx="4"/><text class="seed" x="22" y="330" font-size="10">13</text><text class="txt" x="40" y="330" font-size="11">Lorenzo Musetti</text><text class="mut" x="162" y="330" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="342" width="152" height="20" rx="4"/><text class="seed" x="22" y="356" font-size="10">18</text><text class="txt" x="40" y="356" font-size="11">Holger Rune</text>
+<rect class="card" x="16" y="368" width="152" height="20" rx="4"/><text class="seed" x="22" y="382" font-size="10">5</text><text class="txt" x="40" y="382" font-size="11">Alexander Zverev</text><text class="mut" x="162" y="382" font-size="9" text-anchor="end">3%</text>
+<rect class="card" x="16" y="394" width="152" height="20" rx="4"/><text class="seed" x="22" y="408" font-size="10">28</text><text class="txt" x="40" y="408" font-size="11">Grigor Dimitrov</text>
+<rect class="card" x="16" y="420" width="152" height="20" rx="4"/><text class="seed" x="22" y="434" font-size="10">12</text><text class="txt" x="40" y="434" font-size="11">Alex De Minaur</text><text class="mut" x="162" y="434" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="446" width="152" height="20" rx="4"/><text class="seed" x="22" y="460" font-size="10">20</text><text class="txt" x="40" y="460" font-size="11">Sebastian Korda</text>
+<rect class="card" x="16" y="472" width="152" height="20" rx="4"/><text class="seed" x="22" y="486" font-size="10">2</text><text class="txt" x="40" y="486" font-size="11">Jannik Sinner</text><text class="mut" x="162" y="486" font-size="9" text-anchor="end">32%</text>
+<rect class="card" x="16" y="498" width="152" height="20" rx="4"/><text class="seed" x="22" y="512" font-size="10">31</text><text class="txt" x="40" y="512" font-size="11">Frances Tiafoe</text>
+<rect class="card" x="16" y="524" width="152" height="20" rx="4"/><text class="seed" x="22" y="538" font-size="10">15</text><text class="txt" x="40" y="538" font-size="11">Alexander Bublik</text><text class="mut" x="162" y="538" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="550" width="152" height="20" rx="4"/><text class="seed" x="22" y="564" font-size="10">22</text><text class="txt" x="40" y="564" font-size="11">Felix Auger Aliassime</text>
+<rect class="card" x="16" y="576" width="152" height="20" rx="4"/><text class="seed" x="22" y="590" font-size="10">7</text><text class="txt" x="40" y="590" font-size="11">Arthur Fils</text><text class="mut" x="162" y="590" font-size="9" text-anchor="end">2%</text>
+<rect class="card" x="16" y="602" width="152" height="20" rx="4"/><text class="seed" x="22" y="616" font-size="10">24</text><text class="txt" x="40" y="616" font-size="11">Thiago Agustin Tirante</text>
+<rect class="card" x="16" y="628" width="152" height="20" rx="4"/><text class="seed" x="22" y="642" font-size="10">11</text><text class="txt" x="40" y="642" font-size="11">Jack Draper</text><text class="mut" x="162" y="642" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="654" width="152" height="20" rx="4"/><text class="seed" x="22" y="668" font-size="10">23</text><text class="txt" x="40" y="668" font-size="11">Learner Tien</text>
+<rect class="card" x="16" y="680" width="152" height="20" rx="4"/><text class="seed" x="22" y="694" font-size="10">3</text><text class="txt" x="40" y="694" font-size="11">Novak Djokovic</text><text class="mut" x="162" y="694" font-size="9" text-anchor="end">8%</text>
+<rect class="card" x="16" y="706" width="152" height="20" rx="4"/><text class="seed" x="22" y="720" font-size="10">30</text><text class="txt" x="40" y="720" font-size="11">Casper Ruud</text>
+<rect class="card" x="16" y="732" width="152" height="20" rx="4"/><text class="seed" x="22" y="746" font-size="10">14</text><text class="txt" x="40" y="746" font-size="11">Tommy Paul</text><text class="mut" x="162" y="746" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="758" width="152" height="20" rx="4"/><text class="seed" x="22" y="772" font-size="10">19</text><text class="txt" x="40" y="772" font-size="11">Jakub Mensik</text>
+<rect class="card" x="16" y="784" width="152" height="20" rx="4"/><text class="seed" x="22" y="798" font-size="10">6</text><text class="txt" x="40" y="798" font-size="11">Taylor Fritz</text><text class="mut" x="162" y="798" font-size="9" text-anchor="end">2%</text>
+<rect class="card" x="16" y="810" width="152" height="20" rx="4"/><text class="seed" x="22" y="824" font-size="10">27</text><text class="txt" x="40" y="824" font-size="11">Matteo Berrettini</text>
+<rect class="card" x="16" y="836" width="152" height="20" rx="4"/><text class="seed" x="22" y="850" font-size="10">10</text><text class="txt" x="40" y="850" font-size="11">Ben Shelton</text><text class="mut" x="162" y="850" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="862" width="152" height="20" rx="4"/><text class="seed" x="22" y="876" font-size="10">17</text><text class="txt" x="40" y="876" font-size="11">Andrey Rublev</text>
+<path class="line" d="M168 66 H176 V92 H168"/>
+<path class="line" d="M176 79.0 H184"/>
+<rect class="card" x="184" y="69.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="83.0" font-size="11">—</text>
+<path class="line" d="M168 118 H176 V144 H168"/>
+<path class="line" d="M176 131.0 H184"/>
+<rect class="card" x="184" y="121.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="135.0" font-size="11">—</text>
+<path class="line" d="M168 170 H176 V196 H168"/>
+<path class="line" d="M176 183.0 H184"/>
+<rect class="card" x="184" y="173.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="187.0" font-size="11">—</text>
+<path class="line" d="M168 222 H176 V248 H168"/>
+<path class="line" d="M176 235.0 H184"/>
+<rect class="card" x="184" y="225.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="239.0" font-size="11">—</text>
+<path class="line" d="M168 274 H176 V300 H168"/>
+<path class="line" d="M176 287.0 H184"/>
+<rect class="card" x="184" y="277.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="291.0" font-size="11">—</text>
+<path class="line" d="M168 326 H176 V352 H168"/>
+<path class="line" d="M176 339.0 H184"/>
+<rect class="card" x="184" y="329.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="343.0" font-size="11">—</text>
+<path class="line" d="M168 378 H176 V404 H168"/>
+<path class="line" d="M176 391.0 H184"/>
+<rect class="card" x="184" y="381.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="395.0" font-size="11">—</text>
+<path class="line" d="M168 430 H176 V456 H168"/>
+<path class="line" d="M176 443.0 H184"/>
+<rect class="card" x="184" y="433.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="447.0" font-size="11">—</text>
+<path class="line" d="M168 482 H176 V508 H168"/>
+<path class="line" d="M176 495.0 H184"/>
+<rect class="card" x="184" y="485.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="499.0" font-size="11">—</text>
+<path class="line" d="M168 534 H176 V560 H168"/>
+<path class="line" d="M176 547.0 H184"/>
+<rect class="card" x="184" y="537.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="551.0" font-size="11">—</text>
+<path class="line" d="M168 586 H176 V612 H168"/>
+<path class="line" d="M176 599.0 H184"/>
+<rect class="card" x="184" y="589.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="603.0" font-size="11">—</text>
+<path class="line" d="M168 638 H176 V664 H168"/>
+<path class="line" d="M176 651.0 H184"/>
+<rect class="card" x="184" y="641.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="655.0" font-size="11">—</text>
+<path class="line" d="M168 690 H176 V716 H168"/>
+<path class="line" d="M176 703.0 H184"/>
+<rect class="card" x="184" y="693.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="707.0" font-size="11">—</text>
+<path class="line" d="M168 742 H176 V768 H168"/>
+<path class="line" d="M176 755.0 H184"/>
+<rect class="card" x="184" y="745.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="759.0" font-size="11">—</text>
+<path class="line" d="M168 794 H176 V820 H168"/>
+<path class="line" d="M176 807.0 H184"/>
+<rect class="card" x="184" y="797.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="811.0" font-size="11">—</text>
+<path class="line" d="M168 846 H176 V872 H168"/>
+<path class="line" d="M176 859.0 H184"/>
+<rect class="card" x="184" y="849.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="863.0" font-size="11">—</text>
+<path class="line" d="M336 79.0 H344 V131.0 H336"/>
+<path class="line" d="M344 105.0 H352"/>
+<rect class="card" x="352" y="95.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="109.0" font-size="11">—</text>
+<path class="line" d="M336 183.0 H344 V235.0 H336"/>
+<path class="line" d="M344 209.0 H352"/>
+<rect class="card" x="352" y="199.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="213.0" font-size="11">—</text>
+<path class="line" d="M336 287.0 H344 V339.0 H336"/>
+<path class="line" d="M344 313.0 H352"/>
+<rect class="card" x="352" y="303.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="317.0" font-size="11">—</text>
+<path class="line" d="M336 391.0 H344 V443.0 H336"/>
+<path class="line" d="M344 417.0 H352"/>
+<rect class="card" x="352" y="407.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="421.0" font-size="11">—</text>
+<path class="line" d="M336 495.0 H344 V547.0 H336"/>
+<path class="line" d="M344 521.0 H352"/>
+<rect class="card" x="352" y="511.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="525.0" font-size="11">—</text>
+<path class="line" d="M336 599.0 H344 V651.0 H336"/>
+<path class="line" d="M344 625.0 H352"/>
+<rect class="card" x="352" y="615.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="629.0" font-size="11">—</text>
+<path class="line" d="M336 703.0 H344 V755.0 H336"/>
+<path class="line" d="M344 729.0 H352"/>
+<rect class="card" x="352" y="719.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="733.0" font-size="11">—</text>
+<path class="line" d="M336 807.0 H344 V859.0 H336"/>
+<path class="line" d="M344 833.0 H352"/>
+<rect class="card" x="352" y="823.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="837.0" font-size="11">—</text>
+<path class="line" d="M504 105.0 H512 V209.0 H504"/>
+<path class="line" d="M512 157.0 H520"/>
+<rect class="card" x="520" y="147.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="161.0" font-size="11">—</text>
+<path class="line" d="M504 313.0 H512 V417.0 H504"/>
+<path class="line" d="M512 365.0 H520"/>
+<rect class="card" x="520" y="355.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="369.0" font-size="11">—</text>
+<path class="line" d="M504 521.0 H512 V625.0 H504"/>
+<path class="line" d="M512 573.0 H520"/>
+<rect class="card" x="520" y="563.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="577.0" font-size="11">—</text>
+<path class="line" d="M504 729.0 H512 V833.0 H504"/>
+<path class="line" d="M512 781.0 H520"/>
+<rect class="card" x="520" y="771.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="785.0" font-size="11">—</text>
+<path class="line" d="M672 157.0 H680 V365.0 H672"/>
+<path class="line" d="M680 261.0 H688"/>
+<rect class="card" x="688" y="251.0" width="152" height="20" rx="4"/><text class="txt" x="712" y="265.0" font-size="11">—</text>
+<path class="line" d="M672 573.0 H680 V781.0 H672"/>
+<path class="line" d="M680 677.0 H688"/>
+<rect class="card" x="688" y="667.0" width="152" height="20" rx="4"/><text class="txt" x="712" y="681.0" font-size="11">—</text>
+<path class="line" d="M840 261.0 H848 V677.0 H840"/>
+<path class="line" d="M848 469.0 H856"/>
+<rect class="card" x="856" y="459.0" width="152" height="20" rx="4"/><text class="txt" x="880" y="473.0" font-size="11">—</text>
+</svg></details><p class='note' style='margin-top:8px'>Favourites: <b>Carlos Alcaraz 34%, Jannik Sinner 32%</b></p></div><div><div><svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+  .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
+  .txt{fill:var(--txt,#e6edf3);font-family:var(--font,'Inter',system-ui,sans-serif)}
+  .mut{fill:var(--mut,#8b949e)} .barbg{fill:var(--barbg,#21262d)}
+  .bar{fill:var(--accent,#2f81f7)} .bar2{fill:var(--accent2,#3fb950)}
+  .line{stroke:var(--line,#30363d);stroke-width:1.5;fill:none}
+  .seed{fill:var(--mut,#8b949e)}
+</style>
+
+<rect class="bg" x="0" y="0" width="720" height="380" rx="12"/>
+<text class="txt" x="16" y="30" font-size="20" font-weight="700">WTA — Ladies' Singles</text>
+<text class="mut" x="16" y="50" font-size="13">Grass · Bo3 · 32-draw · 40,000 sims</text>
+<text class="txt" x="16" y="83" font-size="14">1. Aryna Sabalenka</text>
+<rect class="barbg" x="230" y="70" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="70" width="400.0" height="16" rx="4"/>
+<text class="txt" x="638" y="83" font-size="13" font-weight="600">18.5%</text>
+<text class="txt" x="16" y="113" font-size="14">2. Iga Swiatek</text>
+<rect class="barbg" x="230" y="100" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="100" width="298.6" height="16" rx="4"/>
+<text class="txt" x="638" y="113" font-size="13" font-weight="600">13.8%</text>
+<text class="txt" x="16" y="143" font-size="14">3. Elena Rybakina</text>
+<rect class="barbg" x="230" y="130" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="130" width="216.7" height="16" rx="4"/>
+<text class="txt" x="638" y="143" font-size="13" font-weight="600">10.0%</text>
+<text class="txt" x="16" y="173" font-size="14">4. Mirra Andreeva</text>
+<rect class="barbg" x="230" y="160" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="160" width="138.3" height="16" rx="4"/>
+<text class="txt" x="638" y="173" font-size="13" font-weight="600">6.4%</text>
+<text class="txt" x="16" y="203" font-size="14">5. Jessica Pegula</text>
+<rect class="barbg" x="230" y="190" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="190" width="132.8" height="16" rx="4"/>
+<text class="txt" x="638" y="203" font-size="13" font-weight="600">6.1%</text>
+<text class="txt" x="16" y="233" font-size="14">6. Amanda Anisimova</text>
+<rect class="barbg" x="230" y="220" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="220" width="116.9" height="16" rx="4"/>
+<text class="txt" x="638" y="233" font-size="13" font-weight="600">5.4%</text>
+<text class="txt" x="16" y="263" font-size="14">7. Coco Gauff</text>
+<rect class="barbg" x="230" y="250" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="250" width="99.6" height="16" rx="4"/>
+<text class="txt" x="638" y="263" font-size="13" font-weight="600">4.6%</text>
+<text class="txt" x="16" y="293" font-size="14">8. Elina Svitolina</text>
+<rect class="barbg" x="230" y="280" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="280" width="94.5" height="16" rx="4"/>
+<text class="txt" x="638" y="293" font-size="13" font-weight="600">4.4%</text>
+<text class="txt" x="16" y="323" font-size="14">9. Marketa Vondrousova</text>
+<rect class="barbg" x="230" y="310" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="310" width="68.5" height="16" rx="4"/>
+<text class="txt" x="638" y="323" font-size="13" font-weight="600">3.2%</text>
+<text class="txt" x="16" y="353" font-size="14">10. Barbora Krejcikova</text>
+<rect class="barbg" x="230" y="340" width="400" height="16" rx="4"/>
+<rect class="bar" x="230" y="340" width="67.5" height="16" rx="4"/>
+<text class="txt" x="638" y="353" font-size="13" font-weight="600">3.1%</text>
+</svg></div><details><summary>seeded bracket (top 32)</summary><svg viewBox="0 0 1040 908" xmlns="http://www.w3.org/2000/svg">
+
+<style>
+  .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
+  .txt{fill:var(--txt,#e6edf3);font-family:var(--font,'Inter',system-ui,sans-serif)}
+  .mut{fill:var(--mut,#8b949e)} .barbg{fill:var(--barbg,#21262d)}
+  .bar{fill:var(--accent,#2f81f7)} .bar2{fill:var(--accent2,#3fb950)}
+  .line{stroke:var(--line,#30363d);stroke-width:1.5;fill:none}
+  .seed{fill:var(--mut,#8b949e)}
+</style>
+
+<rect class="bg" x="0" y="0" width="1040" height="908" rx="12"/>
+<text class="txt" x="16" y="32" font-size="18" font-weight="700">WTA — Ladies' Singles — seeded bracket</text>
+<rect class="card" x="16" y="56" width="152" height="20" rx="4"/><text class="seed" x="22" y="70" font-size="10">1</text><text class="txt" x="40" y="70" font-size="11">Aryna Sabalenka</text><text class="mut" x="162" y="70" font-size="9" text-anchor="end">19%</text>
+<rect class="card" x="16" y="82" width="152" height="20" rx="4"/><text class="seed" x="22" y="96" font-size="10">32</text><text class="txt" x="40" y="96" font-size="11">Danielle Collins</text>
+<rect class="card" x="16" y="108" width="152" height="20" rx="4"/><text class="seed" x="22" y="122" font-size="10">16</text><text class="txt" x="40" y="122" font-size="11">Iva Jovic</text><text class="mut" x="162" y="122" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="134" width="152" height="20" rx="4"/><text class="seed" x="22" y="148" font-size="10">17</text><text class="txt" x="40" y="148" font-size="11">Linda Noskova</text><text class="mut" x="162" y="148" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="160" width="152" height="20" rx="4"/><text class="seed" x="22" y="174" font-size="10">8</text><text class="txt" x="40" y="174" font-size="11">Elina Svitolina</text><text class="mut" x="162" y="174" font-size="9" text-anchor="end">4%</text>
+<rect class="card" x="16" y="186" width="152" height="20" rx="4"/><text class="seed" x="22" y="200" font-size="10">28</text><text class="txt" x="40" y="200" font-size="11">Donna Vekic</text><text class="mut" x="162" y="200" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="212" width="152" height="20" rx="4"/><text class="seed" x="22" y="226" font-size="10">9</text><text class="txt" x="40" y="226" font-size="11">Marketa Vondrousova</text><text class="mut" x="162" y="226" font-size="9" text-anchor="end">3%</text>
+<rect class="card" x="16" y="238" width="152" height="20" rx="4"/><text class="seed" x="22" y="252" font-size="10">26</text><text class="txt" x="40" y="252" font-size="11">Katie Boulter</text><text class="mut" x="162" y="252" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="264" width="152" height="20" rx="4"/><text class="seed" x="22" y="278" font-size="10">4</text><text class="txt" x="40" y="278" font-size="11">Mirra Andreeva</text><text class="mut" x="162" y="278" font-size="9" text-anchor="end">6%</text>
+<rect class="card" x="16" y="290" width="152" height="20" rx="4"/><text class="seed" x="22" y="304" font-size="10">27</text><text class="txt" x="40" y="304" font-size="11">Emma Navarro</text><text class="mut" x="162" y="304" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="316" width="152" height="20" rx="4"/><text class="seed" x="22" y="330" font-size="10">13</text><text class="txt" x="40" y="330" font-size="11">Madison Keys</text><text class="mut" x="162" y="330" font-size="9" text-anchor="end">2%</text>
+<rect class="card" x="16" y="342" width="152" height="20" rx="4"/><text class="seed" x="22" y="356" font-size="10">19</text><text class="txt" x="40" y="356" font-size="11">Naomi Osaka</text><text class="mut" x="162" y="356" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="368" width="152" height="20" rx="4"/><text class="seed" x="22" y="382" font-size="10">5</text><text class="txt" x="40" y="382" font-size="11">Jessica Pegula</text><text class="mut" x="162" y="382" font-size="9" text-anchor="end">6%</text>
+<rect class="card" x="16" y="394" width="152" height="20" rx="4"/><text class="seed" x="22" y="408" font-size="10">25</text><text class="txt" x="40" y="408" font-size="11">Petra Kvitova</text><text class="mut" x="162" y="408" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="420" width="152" height="20" rx="4"/><text class="seed" x="22" y="434" font-size="10">12</text><text class="txt" x="40" y="434" font-size="11">Karolina Muchova</text><text class="mut" x="162" y="434" font-size="9" text-anchor="end">3%</text>
+<rect class="card" x="16" y="446" width="152" height="20" rx="4"/><text class="seed" x="22" y="460" font-size="10">22</text><text class="txt" x="40" y="460" font-size="11">Emma Raducanu</text><text class="mut" x="162" y="460" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="472" width="152" height="20" rx="4"/><text class="seed" x="22" y="486" font-size="10">2</text><text class="txt" x="40" y="486" font-size="11">Iga Swiatek</text><text class="mut" x="162" y="486" font-size="9" text-anchor="end">14%</text>
+<rect class="card" x="16" y="498" width="152" height="20" rx="4"/><text class="seed" x="22" y="512" font-size="10">30</text><text class="txt" x="40" y="512" font-size="11">Jelena Ostapenko</text><text class="mut" x="162" y="512" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="524" width="152" height="20" rx="4"/><text class="seed" x="22" y="538" font-size="10">15</text><text class="txt" x="40" y="538" font-size="11">Marta Kostyuk</text><text class="mut" x="162" y="538" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="550" width="152" height="20" rx="4"/><text class="seed" x="22" y="564" font-size="10">18</text><text class="txt" x="40" y="564" font-size="11">Diana Shnaider</text><text class="mut" x="162" y="564" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="576" width="152" height="20" rx="4"/><text class="seed" x="22" y="590" font-size="10">7</text><text class="txt" x="40" y="590" font-size="11">Coco Gauff</text><text class="mut" x="162" y="590" font-size="9" text-anchor="end">5%</text>
+<rect class="card" x="16" y="602" width="152" height="20" rx="4"/><text class="seed" x="22" y="616" font-size="10">24</text><text class="txt" x="40" y="616" font-size="11">Elise Mertens</text><text class="mut" x="162" y="616" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="628" width="152" height="20" rx="4"/><text class="seed" x="22" y="642" font-size="10">10</text><text class="txt" x="40" y="642" font-size="11">Barbora Krejcikova</text><text class="mut" x="162" y="642" font-size="9" text-anchor="end">3%</text>
+<rect class="card" x="16" y="654" width="152" height="20" rx="4"/><text class="seed" x="22" y="668" font-size="10">23</text><text class="txt" x="40" y="668" font-size="11">Ons Jabeur</text><text class="mut" x="162" y="668" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="680" width="152" height="20" rx="4"/><text class="seed" x="22" y="694" font-size="10">3</text><text class="txt" x="40" y="694" font-size="11">Elena Rybakina</text><text class="mut" x="162" y="694" font-size="9" text-anchor="end">10%</text>
+<rect class="card" x="16" y="706" width="152" height="20" rx="4"/><text class="seed" x="22" y="720" font-size="10">31</text><text class="txt" x="40" y="720" font-size="11">Karolina Pliskova</text>
+<rect class="card" x="16" y="732" width="152" height="20" rx="4"/><text class="seed" x="22" y="746" font-size="10">14</text><text class="txt" x="40" y="746" font-size="11">Victoria Mboko</text><text class="mut" x="162" y="746" font-size="9" text-anchor="end">2%</text>
+<rect class="card" x="16" y="758" width="152" height="20" rx="4"/><text class="seed" x="22" y="772" font-size="10">20</text><text class="txt" x="40" y="772" font-size="11">Jasmine Paolini</text><text class="mut" x="162" y="772" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="784" width="152" height="20" rx="4"/><text class="seed" x="22" y="798" font-size="10">6</text><text class="txt" x="40" y="798" font-size="11">Amanda Anisimova</text><text class="mut" x="162" y="798" font-size="9" text-anchor="end">5%</text>
+<rect class="card" x="16" y="810" width="152" height="20" rx="4"/><text class="seed" x="22" y="824" font-size="10">29</text><text class="txt" x="40" y="824" font-size="11">Anastasia Potapova</text><text class="mut" x="162" y="824" font-size="9" text-anchor="end">1%</text>
+<rect class="card" x="16" y="836" width="152" height="20" rx="4"/><text class="seed" x="22" y="850" font-size="10">11</text><text class="txt" x="40" y="850" font-size="11">Belinda Bencic</text><text class="mut" x="162" y="850" font-size="9" text-anchor="end">3%</text>
+<rect class="card" x="16" y="862" width="152" height="20" rx="4"/><text class="seed" x="22" y="876" font-size="10">21</text><text class="txt" x="40" y="876" font-size="11">Anna Kalinskaya</text><text class="mut" x="162" y="876" font-size="9" text-anchor="end">1%</text>
+<path class="line" d="M168 66 H176 V92 H168"/>
+<path class="line" d="M176 79.0 H184"/>
+<rect class="card" x="184" y="69.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="83.0" font-size="11">—</text>
+<path class="line" d="M168 118 H176 V144 H168"/>
+<path class="line" d="M176 131.0 H184"/>
+<rect class="card" x="184" y="121.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="135.0" font-size="11">—</text>
+<path class="line" d="M168 170 H176 V196 H168"/>
+<path class="line" d="M176 183.0 H184"/>
+<rect class="card" x="184" y="173.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="187.0" font-size="11">—</text>
+<path class="line" d="M168 222 H176 V248 H168"/>
+<path class="line" d="M176 235.0 H184"/>
+<rect class="card" x="184" y="225.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="239.0" font-size="11">—</text>
+<path class="line" d="M168 274 H176 V300 H168"/>
+<path class="line" d="M176 287.0 H184"/>
+<rect class="card" x="184" y="277.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="291.0" font-size="11">—</text>
+<path class="line" d="M168 326 H176 V352 H168"/>
+<path class="line" d="M176 339.0 H184"/>
+<rect class="card" x="184" y="329.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="343.0" font-size="11">—</text>
+<path class="line" d="M168 378 H176 V404 H168"/>
+<path class="line" d="M176 391.0 H184"/>
+<rect class="card" x="184" y="381.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="395.0" font-size="11">—</text>
+<path class="line" d="M168 430 H176 V456 H168"/>
+<path class="line" d="M176 443.0 H184"/>
+<rect class="card" x="184" y="433.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="447.0" font-size="11">—</text>
+<path class="line" d="M168 482 H176 V508 H168"/>
+<path class="line" d="M176 495.0 H184"/>
+<rect class="card" x="184" y="485.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="499.0" font-size="11">—</text>
+<path class="line" d="M168 534 H176 V560 H168"/>
+<path class="line" d="M176 547.0 H184"/>
+<rect class="card" x="184" y="537.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="551.0" font-size="11">—</text>
+<path class="line" d="M168 586 H176 V612 H168"/>
+<path class="line" d="M176 599.0 H184"/>
+<rect class="card" x="184" y="589.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="603.0" font-size="11">—</text>
+<path class="line" d="M168 638 H176 V664 H168"/>
+<path class="line" d="M176 651.0 H184"/>
+<rect class="card" x="184" y="641.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="655.0" font-size="11">—</text>
+<path class="line" d="M168 690 H176 V716 H168"/>
+<path class="line" d="M176 703.0 H184"/>
+<rect class="card" x="184" y="693.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="707.0" font-size="11">—</text>
+<path class="line" d="M168 742 H176 V768 H168"/>
+<path class="line" d="M176 755.0 H184"/>
+<rect class="card" x="184" y="745.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="759.0" font-size="11">—</text>
+<path class="line" d="M168 794 H176 V820 H168"/>
+<path class="line" d="M176 807.0 H184"/>
+<rect class="card" x="184" y="797.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="811.0" font-size="11">—</text>
+<path class="line" d="M168 846 H176 V872 H168"/>
+<path class="line" d="M176 859.0 H184"/>
+<rect class="card" x="184" y="849.0" width="152" height="20" rx="4"/><text class="txt" x="208" y="863.0" font-size="11">—</text>
+<path class="line" d="M336 79.0 H344 V131.0 H336"/>
+<path class="line" d="M344 105.0 H352"/>
+<rect class="card" x="352" y="95.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="109.0" font-size="11">—</text>
+<path class="line" d="M336 183.0 H344 V235.0 H336"/>
+<path class="line" d="M344 209.0 H352"/>
+<rect class="card" x="352" y="199.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="213.0" font-size="11">—</text>
+<path class="line" d="M336 287.0 H344 V339.0 H336"/>
+<path class="line" d="M344 313.0 H352"/>
+<rect class="card" x="352" y="303.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="317.0" font-size="11">—</text>
+<path class="line" d="M336 391.0 H344 V443.0 H336"/>
+<path class="line" d="M344 417.0 H352"/>
+<rect class="card" x="352" y="407.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="421.0" font-size="11">—</text>
+<path class="line" d="M336 495.0 H344 V547.0 H336"/>
+<path class="line" d="M344 521.0 H352"/>
+<rect class="card" x="352" y="511.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="525.0" font-size="11">—</text>
+<path class="line" d="M336 599.0 H344 V651.0 H336"/>
+<path class="line" d="M344 625.0 H352"/>
+<rect class="card" x="352" y="615.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="629.0" font-size="11">—</text>
+<path class="line" d="M336 703.0 H344 V755.0 H336"/>
+<path class="line" d="M344 729.0 H352"/>
+<rect class="card" x="352" y="719.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="733.0" font-size="11">—</text>
+<path class="line" d="M336 807.0 H344 V859.0 H336"/>
+<path class="line" d="M344 833.0 H352"/>
+<rect class="card" x="352" y="823.0" width="152" height="20" rx="4"/><text class="txt" x="376" y="837.0" font-size="11">—</text>
+<path class="line" d="M504 105.0 H512 V209.0 H504"/>
+<path class="line" d="M512 157.0 H520"/>
+<rect class="card" x="520" y="147.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="161.0" font-size="11">—</text>
+<path class="line" d="M504 313.0 H512 V417.0 H504"/>
+<path class="line" d="M512 365.0 H520"/>
+<rect class="card" x="520" y="355.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="369.0" font-size="11">—</text>
+<path class="line" d="M504 521.0 H512 V625.0 H504"/>
+<path class="line" d="M512 573.0 H520"/>
+<rect class="card" x="520" y="563.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="577.0" font-size="11">—</text>
+<path class="line" d="M504 729.0 H512 V833.0 H504"/>
+<path class="line" d="M512 781.0 H520"/>
+<rect class="card" x="520" y="771.0" width="152" height="20" rx="4"/><text class="txt" x="544" y="785.0" font-size="11">—</text>
+<path class="line" d="M672 157.0 H680 V365.0 H672"/>
+<path class="line" d="M680 261.0 H688"/>
+<rect class="card" x="688" y="251.0" width="152" height="20" rx="4"/><text class="txt" x="712" y="265.0" font-size="11">—</text>
+<path class="line" d="M672 573.0 H680 V781.0 H672"/>
+<path class="line" d="M680 677.0 H688"/>
+<rect class="card" x="688" y="667.0" width="152" height="20" rx="4"/><text class="txt" x="712" y="681.0" font-size="11">—</text>
+<path class="line" d="M840 261.0 H848 V677.0 H840"/>
+<path class="line" d="M848 469.0 H856"/>
+<rect class="card" x="856" y="459.0" width="152" height="20" rx="4"/><text class="txt" x="880" y="473.0" font-size="11">—</text>
+</svg></details><p class='note' style='margin-top:8px'>Favourites: <b>Aryna Sabalenka 19%, Iga Swiatek 14%</b></p></div></div>
+</section>
+
+<section id="form">
+  <h2>Current grass form</h2>
+  <p class="sub">Top of each tour by blended (overall + grass) Elo, active in the last 12 months.</p>
+  <div class="grid2"><div class='card'><h3>ATP — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th><th class='num'>Grass</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Carlos Alcaraz</td><td class='num'>1987</td><td class='num'>1905</td></tr><tr><td class='rank'>2</td><td class='lead'>Jannik Sinner</td><td class='num'>1981</td><td class='num'>1818</td></tr><tr><td class='rank'>3</td><td class='lead'>Novak Djokovic</td><td class='num'>1854</td><td class='num'>1806</td></tr><tr><td class='rank'>4</td><td class='lead'>Rafael Jodar</td><td class='num'>1830</td><td class='num'>1830</td></tr><tr><td class='rank'>5</td><td class='lead'>Alexander Zverev</td><td class='num'>1804</td><td class='num'>1669</td></tr><tr><td class='rank'>6</td><td class='lead'>Taylor Fritz</td><td class='num'>1773</td><td class='num'>1778</td></tr><tr><td class='rank'>7</td><td class='lead'>Arthur Fils</td><td class='num'>1760</td><td class='num'>1632</td></tr><tr><td class='rank'>8</td><td class='lead'>Daniil Medvedev</td><td class='num'>1753</td><td class='num'>1698</td></tr><tr><td class='rank'>9</td><td class='lead'>Valentin Vacherot</td><td class='num'>1750</td><td class='num'>1750</td></tr><tr><td class='rank'>10</td><td class='lead'>Jack Draper</td><td class='num'>1747</td><td class='num'>1674</td></tr></tbody></table></div><div class='card'><h3>WTA — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th><th class='num'>Grass</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Aryna Sabalenka</td><td class='num'>1884</td><td class='num'>1716</td></tr><tr><td class='rank'>2</td><td class='lead'>Iga Swiatek</td><td class='num'>1853</td><td class='num'>1803</td></tr><tr><td class='rank'>3</td><td class='lead'>Elena Rybakina</td><td class='num'>1830</td><td class='num'>1685</td></tr><tr><td class='rank'>4</td><td class='lead'>Mirra Andreeva</td><td class='num'>1792</td><td class='num'>1630</td></tr><tr><td class='rank'>5</td><td class='lead'>Jessica Pegula</td><td class='num'>1791</td><td class='num'>1654</td></tr><tr><td class='rank'>6</td><td class='lead'>Amanda Anisimova</td><td class='num'>1781</td><td class='num'>1728</td></tr><tr><td class='rank'>7</td><td class='lead'>Coco Gauff</td><td class='num'>1768</td><td class='num'>1609</td></tr><tr><td class='rank'>8</td><td class='lead'>Elina Svitolina</td><td class='num'>1767</td><td class='num'>1630</td></tr><tr><td class='rank'>9</td><td class='lead'>Marketa Vondrousova</td><td class='num'>1748</td><td class='num'>1731</td></tr><tr><td class='rank'>10</td><td class='lead'>Barbora Krejcikova</td><td class='num'>1747</td><td class='num'>1777</td></tr></tbody></table></div></div>
+</section>
+
+<section id="how">
+  <h2>How it works</h2>
+  <p class="note">
+  Every match in tour history is replayed in order, updating each player's <b>overall</b> and
+  <b>per-surface</b> Elo. A dynamic K-factor lets newcomers move fast and veterans stay stable;
+  an inactivity decay keeps ratings current through injuries and off-seasons. A match probability
+  is the logistic of the blended rating gap. Draw projections Monte-Carlo the bracket; the market
+  benchmark joins bookmaker closing odds and measures closing-line value (CLV) — the honest measure,
+  since single matches are high variance.</p>
+  <div style="margin-top:14px">
+    <span class="pill">surface-weighted Elo</span><span class="pill">inactivity decay</span>
+    <span class="pill">Monte Carlo brackets</span><span class="pill">de-vigged market odds</span>
+    <span class="pill">closing-line value</span><span class="pill">both tours, 1968–2026</span>
+  </div>
+</section>
+
+<footer>
+  <p>Built with surface-weighted Elo. Match data: <a href="https://github.com/LuckyLoser91/TennisCourtLog">TennisCourtLog</a>
+  (a live mirror of Jeff Sackmann's format). Odds: <a href="http://www.tennis-data.co.uk">tennis-data.co.uk</a>.
+  Not affiliated with the ATP, WTA, or Wimbledon. For research, not betting advice.</p>
+</footer>
+
+</div></body></html>

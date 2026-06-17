@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 
-from . import engine, viz
+from . import calendar, engine, viz
 from .simulator import seeded_slot_order, simulate
 
 DOCS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
@@ -64,9 +64,9 @@ def _ratings_table(elo, tour, surface, asof, n=10) -> str:
     for i, r in enumerate(rows, 1):
         trs.append(f"<tr><td class='rank'>{i}</td><td class='lead'>{r.name}</td>"
                    f"<td class='num'>{r.blended:.0f}</td><td class='num'>{r.surface:.0f}</td></tr>")
-    return (f"<div class='card'><h3>{tour.upper()} — current grass form</h3>"
+    return (f"<div class='card'><h3>{tour.upper()} — current {surface.lower()} form</h3>"
             f"<table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th>"
-            f"<th class='num'>Grass</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>")
+            f"<th class='num'>{surface}</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>")
 
 
 def build(draw_size: int = 32) -> str:
@@ -75,23 +75,28 @@ def build(draw_size: int = 32) -> str:
     cards, raw = scorecard_build()
     scorecard = viz.scorecard_svg(cards, title="Skill vs the ranking & the market")
 
+    slam = calendar.next_slam()                       # next/current Grand Slam — drives everything
+    surf = slam.surface
+    when = ("underway" if slam.status == "in_progress"
+            else f"starts {slam.start.strftime('%-d %b %Y')}")
+
     proj_sections, rating_cards, asof = [], [], 0
-    for tour, bo, label in (("atp", 5, "ATP — Gentlemen's Singles"), ("wta", 3, "WTA — Ladies' Singles")):
+    for tour, bo, label in (("atp", 5, "ATP — Men's Singles"), ("wta", 3, "WTA — Women's Singles")):
         elo, df = engine.fit(tour)
         asof = int(df["tourney_date"].max())
         active = (asof // 10000 - 1) * 10000 + (asof % 10000)
-        field = [r.key for r in engine.current_table(elo, "Grass", tour=tour,
+        field = [r.key for r in engine.current_table(elo, surf, tour=tour,
                                                       active_since=active, min_n=25, top=draw_size)]
-        slots = seeded_slot_order(field, elo, "Grass")
-        res = simulate(field, elo, "Grass", best_of=bo, n_sims=40000, slots=slots, bo5_sharpen=0.15)
+        slots = seeded_slot_order(field, elo, surf)
+        res = simulate(field, elo, surf, best_of=bo, n_sims=40000, slots=slots, bo5_sharpen=0.15)
         fav = ", ".join(f"{n} {w*100:.0f}%" for n, w, _, _ in res.champion_table(2))
         odds = viz.odds_svg(res, top=10, title=label,
-                            subtitle=f"Grass · Bo{bo} · {res.draw_size}-draw · {res.n_sims:,} sims")
+                            subtitle=f"{surf} · Bo{bo} · {res.draw_size}-draw · {res.n_sims:,} sims")
         bracket = viz.bracket_svg(res, slots, title=f"{label} — seeded bracket")
         proj_sections.append(
             f"<div><div>{odds}</div><details><summary>seeded bracket (top {draw_size})</summary>{bracket}</details>"
             f"<p class='note' style='margin-top:8px'>Favourites: <b>{fav}</b></p></div>")
-        rating_cards.append(_ratings_table(elo, tour, "Grass", asof))
+        rating_cards.append(_ratings_table(elo, tour, surf, asof))
 
     n_total = sum(raw[t]["validation"]["n_eval"] for t in raw)
     atp_v, wta_v = raw["atp"]["validation"], raw["wta"]["validation"]
@@ -113,8 +118,8 @@ def build(draw_size: int = 32) -> str:
   and an honest benchmark against the betting market.</p>
   <div class="meta">
     <span>Data through <b>{_fmt_date(asof)}</b></span>
-    <span><b>360k+</b> matches, 1968–2026</span>
-    <span>Both tours</span>
+    <span>Next major <b>{slam.label}</b></span>
+    <span><b>360k+</b> matches, both tours</span>
   </div>
 </header>
 
@@ -132,16 +137,17 @@ def build(draw_size: int = 32) -> str:
   Edge is expected in lower tiers (Challenger/ITF) and early rounds — not tested by this main-tour odds source.</p>
 </section>
 
-<section id="wimbledon">
-  <h2>Wimbledon 2026 — projection</h2>
-  <p class="sub">Monte Carlo bracket simulation on grass (ATP best-of-5, WTA best-of-3). Field seeded
-  by current rating — illustrative until the official draw is published.</p>
+<section id="slam">
+  <h2>{slam.label} — projection</h2>
+  <p class="sub">Monte Carlo bracket simulation on {surf.lower()} (ATP best-of-5, WTA best-of-3) — {when}.
+  Field seeded by current rating, illustrative until the official draw is published. This view rolls
+  to the next Grand Slam automatically once each one finishes.</p>
   <div class="grid2">{''.join(proj_sections)}</div>
 </section>
 
 <section id="form">
-  <h2>Current grass form</h2>
-  <p class="sub">Top of each tour by blended (overall + grass) Elo, active in the last 12 months.</p>
+  <h2>Current {surf.lower()} form</h2>
+  <p class="sub">Top of each tour by blended (overall + {surf.lower()}) Elo, active in the last 12 months.</p>
   <div class="grid2">{''.join(rating_cards)}</div>
 </section>
 

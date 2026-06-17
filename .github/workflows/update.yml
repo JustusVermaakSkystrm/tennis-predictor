@@ -1,0 +1,53 @@
+name: update-site
+
+# Rebuild the GitHub Pages site from the latest data.
+# Data sources refresh ~daily (TennisCourtLog matches + tennis-data.co.uk odds), so a
+# few runs a day keeps the projection, ratings, and scorecard current and rolls the
+# featured Grand Slam over automatically once one finishes.
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"   # every 6h (offset to avoid the top-of-hour stampede)
+  workflow_dispatch:          # manual "Run workflow" button
+
+permissions:
+  contents: write             # allow committing the rebuilt docs/ back to main
+
+concurrency:
+  group: update-site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install deps
+        run: pip install -r requirements.txt
+
+      - name: Fetch data (matches + odds)
+        run: |
+          bash scripts/fetch_data.sh
+          bash scripts/fetch_odds.sh
+
+      - name: Rebuild site
+        run: python -m scripts.build_site
+
+      - name: Commit & push if changed
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/
+          if git diff --staged --quiet; then
+            echo "No changes — site already current."
+          else
+            git commit -m "Auto-update site ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+            echo "Pushed refreshed site."
+          fi

@@ -1,5 +1,7 @@
 # tennis-predictor
 
+**Live site → https://justusvermaakskystrm.github.io/tennis-predictor/**
+
 Prediction engine for professional tennis (ATP + WTA), ported in spirit from the
 football World Cup predictor: **ratings → match model → (draw simulation) →
 probabilities → market comparison**, headed for an auto-updating public site with a
@@ -103,7 +105,9 @@ ids: `Tennismylife/TML-Database` (ATP, 1968–2026, + `indoor` flag) and
 ```bash
 python -m tennis.dataset                 # show data status + coverage
 python -m scripts.validate --tour atp    # Elo vs ranking, last 12 months
-python -m scripts.validate --tour wta    # (after WTA clone lands)
+python -m scripts.benchmark_market --tour atp   # model vs market + CLV
+python -m scripts.project_draw           # Wimbledon 2026 bracket -> out/
+python -m scripts.build_site             # regenerate the live site -> docs/index.html
 ```
 
 ## Roadmap

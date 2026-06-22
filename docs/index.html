@@ -1,62 +1,62 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tennis Model — ATP & WTA prediction engine</title>
-<meta name="description" content="Surface-weighted Elo predictions for ATP & WTA tennis, with a path-to-the-final draw projection and an honest market/CLV benchmark.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>🎾 Tennis — ML Predictions (ATP & WTA)</title>
+<meta name="description" content="Surface-weighted Elo predictions for ATP & WTA tennis: Grand Slam path-to-the-final projections and an honest market/CLV benchmark.">
 <style>
 :root{
-  --bg:#0d1117; --card:#161b22; --txt:#e6edf3; --mut:#8b949e; --line:#30363d;
-  --accent:#2f81f7; --accent2:#3fb950; --barbg:#21262d; --font:'Inter',system-ui,-apple-system,sans-serif;
+  --bg:#0e1320; --card:#161e31; --text:#e8ecf5; --muted:#93a0b8;
+  --accent:#4cc38a; --accent2:#f5c542; --line:#26314f; --head:#1f2a44;
+  /* aliases consumed by the embedded SVGs (viz.py uses --txt/--mut/--barbg/--bar2) */
+  --txt:#e8ecf5; --mut:#93a0b8; --barbg:#1f2a44; --bar:#4cc38a; --bar2:#f5c542;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box} html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);line-height:1.5}
-.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-header{padding:64px 0 40px;border-bottom:1px solid var(--line)}
-.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px}
-h1{font-size:clamp(30px,5vw,46px);font-weight:800;margin:10px 0 8px;letter-spacing:-.02em}
-.lede{color:var(--mut);font-size:18px;max-width:620px;margin:0}
-.meta{color:var(--mut);font-size:13px;margin-top:18px;display:flex;gap:18px;flex-wrap:wrap}
-.meta b{color:var(--txt);font-weight:600}
-section{padding:48px 0;border-bottom:1px solid var(--line)}
-h2{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
-.sub{color:var(--mut);margin:0 0 22px;max-width:640px}
-svg{width:100%;height:auto;display:block;border-radius:12px}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-.card h3{margin:0 0 12px;font-size:16px;font-weight:700}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
-td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
-td.lead{font-weight:600;color:var(--txt)}
-.rank{color:var(--mut);width:26px}
-details{margin-top:12px} summary{color:var(--mut);cursor:pointer;font-size:14px;padding:6px 0}
-.note{color:var(--mut);font-size:15px;line-height:1.65} .note b{color:var(--txt)}
-.pill{display:inline-block;background:var(--barbg);border:1px solid var(--line);border-radius:999px;
-  padding:3px 11px;font-size:12px;color:var(--mut);margin:2px 4px 2px 0}
-.win{color:var(--accent2);font-weight:700}
-footer{padding:36px 0 64px;color:var(--mut);font-size:13px}
-a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 var(--font)}
+header.hero{background:linear-gradient(135deg,#14532d 0%,#1d4ed8 100%);padding:2.6rem 1rem 2.1rem;text-align:center}
+header.hero h1{margin:0 0 .4rem;font-size:1.95rem;font-weight:800}
+header.hero p{margin:.2rem auto;color:#dbeafe;font-size:.97rem;max-width:560px}
+header.hero .meta{color:#cdd7ea;font-size:.85rem;margin-top:.7rem;display:flex;gap:1.1rem;justify-content:center;flex-wrap:wrap}
+header.hero .meta b{color:#fff;font-weight:600}
+main{max-width:960px;margin:0 auto;padding:1rem}
+section{padding:.4rem 0}
+h2{margin-top:2.4rem;padding-bottom:.35rem;font-size:1.3rem;border-bottom:2px solid var(--line);color:var(--accent2)}
+h3{margin:1.4rem 0 .4rem;font-size:1.05rem;color:var(--accent)}
+p.sub{color:var(--muted);font-size:.95rem;margin:.3rem 0 1rem;max-width:700px}
+svg{width:100%;height:auto;display:block;margin:.6rem 0;border-radius:8px}
+.grid{display:grid;grid-template-columns:1fr;gap:.4rem}
+table{border-collapse:collapse;width:100%;margin:.7rem 0 1.2rem;font-size:.9rem;background:var(--card);
+  border-radius:8px;overflow:hidden}
+thead th{background:var(--head);color:#cdd7ea;text-align:left;padding:.5rem .65rem;font-weight:600}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:.45rem .65rem;border-top:1px solid var(--line);color:var(--text)}
+td.rank{color:var(--muted);width:28px} td.num{color:var(--muted)} td.lead{font-weight:600}
+tbody tr:nth-child(odd){background:rgba(255,255,255,.02)}
+tbody tr:hover{background:rgba(76,195,138,.08)}
+details{margin:.5rem 0} summary{color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem 0}
+.note{color:var(--text);font-size:.95rem;line-height:1.65} .note b{color:var(--accent)}
+.pill{display:inline-block;background:var(--head);border:1px solid var(--line);border-radius:999px;
+  padding:3px 11px;font-size:12px;color:#cdd7ea;margin:2px 4px 2px 0}
+footer{margin:3rem 0 1rem;text-align:center;color:var(--muted);font-size:.8rem;padding:1.5rem 1rem 0;border-top:1px solid var(--line)}
+a{color:#7cb8ff;text-decoration:none} a:hover{text-decoration:underline}
 </style></head>
-<body><div class="wrap">
+<body>
 
-<header>
-  <div class="eyebrow">ATP · WTA · surface-weighted Elo</div>
-  <h1>Tennis prediction model</h1>
-  <p class="lede">Ratings that beat the official rankings, path-to-the-final draw projections,
-  and an honest benchmark against the betting market.</p>
+<header class="hero">
+  <h1>🎾 Tennis — ML Predictions</h1>
+  <p>Surface-weighted Elo for ATP &amp; WTA — Grand Slam path-to-the-final projections and an honest market benchmark.</p>
   <div class="meta">
     <span>Data through <b>2026-06-14</b></span>
     <span>Next major <b>Wimbledon 2026</b></span>
-    <span><b>360k+</b> matches, both tours</span>
+    <span><b>360k+</b> matches · both tours</span>
   </div>
 </header>
 
+<main>
+
 <section id="scorecard">
   <h2>How good is it?</h2>
-  <p class="sub">Two benchmarks, held out from training. Green marks the winner of each row.</p>
+  <p class="sub">Two benchmarks, held out from training. Gold marks the winner of each row.</p>
   <svg viewBox="0 0 736 330" xmlns="http://www.w3.org/2000/svg">
 
 <style>
@@ -113,7 +113,7 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 <text class="txt" x="568" y="254" font-size="13" font-weight="600" text-anchor="end" style="fill:var(--txt,#e6edf3)">-3.7%</text>
 <text x="702" y="254" font-size="13" text-anchor="end" style="fill:var(--mut,#8b949e)">0.0%</text>
 </svg>
-  <p class="note" style="margin-top:16px">
+  <p class="note">
   <b>Versus the ranking</b> — surface-weighted Elo beats the official ATP/WTA ranking on held-out
   matches (ATP 0.6218 vs 0.6247 log-loss;
   WTA 0.6216 vs 0.6447).
@@ -128,7 +128,7 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
   <p class="sub">Monte Carlo bracket simulation on grass (ATP best-of-5, WTA best-of-3) — starts 29 Jun 2026.
   Field seeded by current rating, illustrative until the official draw is published. This view rolls
   to the next Grand Slam automatically once each one finishes.</p>
-  <div class="grid2"><div><div><svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+  <div class="grid"><div><div><svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
 
 <style>
   .bg{fill:var(--bg,#0d1117)} .card{fill:var(--card,#161b22)}
@@ -766,18 +766,18 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
 <section id="form">
   <h2>Current grass form</h2>
   <p class="sub">Top of each tour by blended (overall + grass) Elo, active in the last 12 months.</p>
-  <div class="grid2"><div class='card'><h3>ATP — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th><th class='num'>Grass</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Carlos Alcaraz</td><td class='num'>1987</td><td class='num'>1905</td></tr><tr><td class='rank'>2</td><td class='lead'>Jannik Sinner</td><td class='num'>1981</td><td class='num'>1818</td></tr><tr><td class='rank'>3</td><td class='lead'>Novak Djokovic</td><td class='num'>1854</td><td class='num'>1806</td></tr><tr><td class='rank'>4</td><td class='lead'>Rafael Jodar</td><td class='num'>1830</td><td class='num'>1830</td></tr><tr><td class='rank'>5</td><td class='lead'>Alexander Zverev</td><td class='num'>1804</td><td class='num'>1669</td></tr><tr><td class='rank'>6</td><td class='lead'>Taylor Fritz</td><td class='num'>1773</td><td class='num'>1778</td></tr><tr><td class='rank'>7</td><td class='lead'>Arthur Fils</td><td class='num'>1760</td><td class='num'>1632</td></tr><tr><td class='rank'>8</td><td class='lead'>Daniil Medvedev</td><td class='num'>1753</td><td class='num'>1698</td></tr><tr><td class='rank'>9</td><td class='lead'>Valentin Vacherot</td><td class='num'>1750</td><td class='num'>1750</td></tr><tr><td class='rank'>10</td><td class='lead'>Jack Draper</td><td class='num'>1747</td><td class='num'>1674</td></tr></tbody></table></div><div class='card'><h3>WTA — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th><th class='num'>Grass</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Aryna Sabalenka</td><td class='num'>1884</td><td class='num'>1716</td></tr><tr><td class='rank'>2</td><td class='lead'>Iga Swiatek</td><td class='num'>1853</td><td class='num'>1803</td></tr><tr><td class='rank'>3</td><td class='lead'>Elena Rybakina</td><td class='num'>1830</td><td class='num'>1685</td></tr><tr><td class='rank'>4</td><td class='lead'>Mirra Andreeva</td><td class='num'>1792</td><td class='num'>1630</td></tr><tr><td class='rank'>5</td><td class='lead'>Jessica Pegula</td><td class='num'>1791</td><td class='num'>1654</td></tr><tr><td class='rank'>6</td><td class='lead'>Amanda Anisimova</td><td class='num'>1781</td><td class='num'>1728</td></tr><tr><td class='rank'>7</td><td class='lead'>Coco Gauff</td><td class='num'>1768</td><td class='num'>1609</td></tr><tr><td class='rank'>8</td><td class='lead'>Elina Svitolina</td><td class='num'>1767</td><td class='num'>1630</td></tr><tr><td class='rank'>9</td><td class='lead'>Marketa Vondrousova</td><td class='num'>1748</td><td class='num'>1731</td></tr><tr><td class='rank'>10</td><td class='lead'>Barbora Krejcikova</td><td class='num'>1747</td><td class='num'>1777</td></tr></tbody></table></div></div>
+  <h3>ATP — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended Elo</th><th class='num'>Grass Elo</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Carlos Alcaraz</td><td class='num'>1987</td><td class='num'>1905</td></tr><tr><td class='rank'>2</td><td class='lead'>Jannik Sinner</td><td class='num'>1981</td><td class='num'>1818</td></tr><tr><td class='rank'>3</td><td class='lead'>Novak Djokovic</td><td class='num'>1854</td><td class='num'>1806</td></tr><tr><td class='rank'>4</td><td class='lead'>Rafael Jodar</td><td class='num'>1830</td><td class='num'>1830</td></tr><tr><td class='rank'>5</td><td class='lead'>Alexander Zverev</td><td class='num'>1804</td><td class='num'>1669</td></tr><tr><td class='rank'>6</td><td class='lead'>Taylor Fritz</td><td class='num'>1773</td><td class='num'>1778</td></tr><tr><td class='rank'>7</td><td class='lead'>Arthur Fils</td><td class='num'>1760</td><td class='num'>1632</td></tr><tr><td class='rank'>8</td><td class='lead'>Daniil Medvedev</td><td class='num'>1753</td><td class='num'>1698</td></tr><tr><td class='rank'>9</td><td class='lead'>Valentin Vacherot</td><td class='num'>1750</td><td class='num'>1750</td></tr><tr><td class='rank'>10</td><td class='lead'>Jack Draper</td><td class='num'>1747</td><td class='num'>1674</td></tr></tbody></table><h3>WTA — current grass form</h3><table><thead><tr><th></th><th>Player</th><th class='num'>Blended Elo</th><th class='num'>Grass Elo</th></tr></thead><tbody><tr><td class='rank'>1</td><td class='lead'>Aryna Sabalenka</td><td class='num'>1884</td><td class='num'>1716</td></tr><tr><td class='rank'>2</td><td class='lead'>Iga Swiatek</td><td class='num'>1853</td><td class='num'>1803</td></tr><tr><td class='rank'>3</td><td class='lead'>Elena Rybakina</td><td class='num'>1830</td><td class='num'>1685</td></tr><tr><td class='rank'>4</td><td class='lead'>Mirra Andreeva</td><td class='num'>1792</td><td class='num'>1630</td></tr><tr><td class='rank'>5</td><td class='lead'>Jessica Pegula</td><td class='num'>1791</td><td class='num'>1654</td></tr><tr><td class='rank'>6</td><td class='lead'>Amanda Anisimova</td><td class='num'>1781</td><td class='num'>1728</td></tr><tr><td class='rank'>7</td><td class='lead'>Coco Gauff</td><td class='num'>1768</td><td class='num'>1609</td></tr><tr><td class='rank'>8</td><td class='lead'>Elina Svitolina</td><td class='num'>1767</td><td class='num'>1630</td></tr><tr><td class='rank'>9</td><td class='lead'>Marketa Vondrousova</td><td class='num'>1748</td><td class='num'>1731</td></tr><tr><td class='rank'>10</td><td class='lead'>Barbora Krejcikova</td><td class='num'>1747</td><td class='num'>1777</td></tr></tbody></table>
 </section>
 
 <section id="how">
-  <h2>How it works</h2>
+  <h2>How to read this</h2>
   <p class="note">
   Every match in tour history is replayed in order, updating each player's <b>overall</b> and
   <b>per-surface</b> Elo. A dynamic K-factor lets newcomers move fast and veterans stay stable;
   an inactivity decay keeps ratings current through injuries and off-seasons. A match probability
-  is the logistic of the blended rating gap. Draw projections Monte-Carlo the bracket; the market
-  benchmark joins bookmaker closing odds and measures closing-line value (CLV) — the honest measure,
-  since single matches are high variance.</p>
+  is the logistic of the blended rating gap. The projection Monte-Carlos the bracket to get each
+  player's <b>path to the final</b>; the scorecard's market column joins bookmaker closing odds and
+  measures closing-line value (CLV) — the honest measure, since single matches are high variance.</p>
   <div style="margin-top:14px">
     <span class="pill">surface-weighted Elo</span><span class="pill">inactivity decay</span>
     <span class="pill">Monte Carlo brackets</span><span class="pill">de-vigged market odds</span>
@@ -785,10 +785,12 @@ a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
   </div>
 </section>
 
+</main>
+
 <footer>
   <p>Built with surface-weighted Elo. Match data: <a href="https://github.com/LuckyLoser91/TennisCourtLog">TennisCourtLog</a>
-  (a live mirror of Jeff Sackmann's format). Odds: <a href="http://www.tennis-data.co.uk">tennis-data.co.uk</a>.
+  (a live mirror of Jeff Sackmann's format). Odds: <a href="http://www.tennis-data.co.uk">tennis-data.co.uk</a>.<br>
   Not affiliated with the ATP, WTA, or Wimbledon. For research, not betting advice.</p>
 </footer>
 
-</div></body></html>
+</body></html>

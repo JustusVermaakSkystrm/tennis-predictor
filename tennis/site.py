@@ -17,38 +17,40 @@ DOCS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
 
 CSS = """
 :root{
-  --bg:#0d1117; --card:#161b22; --txt:#e6edf3; --mut:#8b949e; --line:#30363d;
-  --accent:#2f81f7; --accent2:#3fb950; --barbg:#21262d; --font:'Inter',system-ui,-apple-system,sans-serif;
+  --bg:#0e1320; --card:#161e31; --text:#e8ecf5; --muted:#93a0b8;
+  --accent:#4cc38a; --accent2:#f5c542; --line:#26314f; --head:#1f2a44;
+  /* aliases consumed by the embedded SVGs (viz.py uses --txt/--mut/--barbg/--bar2) */
+  --txt:#e8ecf5; --mut:#93a0b8; --barbg:#1f2a44; --bar:#4cc38a; --bar2:#f5c542;
+  --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
 }
 *{box-sizing:border-box} html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--txt);font-family:var(--font);line-height:1.5}
-.wrap{max-width:1080px;margin:0 auto;padding:0 20px}
-header{padding:64px 0 40px;border-bottom:1px solid var(--line)}
-.eyebrow{color:var(--accent);font-weight:600;letter-spacing:.04em;text-transform:uppercase;font-size:13px}
-h1{font-size:clamp(30px,5vw,46px);font-weight:800;margin:10px 0 8px;letter-spacing:-.02em}
-.lede{color:var(--mut);font-size:18px;max-width:620px;margin:0}
-.meta{color:var(--mut);font-size:13px;margin-top:18px;display:flex;gap:18px;flex-wrap:wrap}
-.meta b{color:var(--txt);font-weight:600}
-section{padding:48px 0;border-bottom:1px solid var(--line)}
-h2{font-size:26px;font-weight:700;margin:0 0 6px;letter-spacing:-.01em}
-.sub{color:var(--mut);margin:0 0 22px;max-width:640px}
-svg{width:100%;height:auto;display:block;border-radius:12px}
-.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:22px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
-.card h3{margin:0 0 12px;font-size:16px;font-weight:700}
-table{width:100%;border-collapse:collapse;font-size:14px}
-th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line)}
-th{color:var(--mut);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.03em}
-td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--mut)}
-td.lead{font-weight:600;color:var(--txt)}
-.rank{color:var(--mut);width:26px}
-details{margin-top:12px} summary{color:var(--mut);cursor:pointer;font-size:14px;padding:6px 0}
-.note{color:var(--mut);font-size:15px;line-height:1.65} .note b{color:var(--txt)}
-.pill{display:inline-block;background:var(--barbg);border:1px solid var(--line);border-radius:999px;
-  padding:3px 11px;font-size:12px;color:var(--mut);margin:2px 4px 2px 0}
-.win{color:var(--accent2);font-weight:700}
-footer{padding:36px 0 64px;color:var(--mut);font-size:13px}
-a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.55 var(--font)}
+header.hero{background:linear-gradient(135deg,#14532d 0%,#1d4ed8 100%);padding:2.6rem 1rem 2.1rem;text-align:center}
+header.hero h1{margin:0 0 .4rem;font-size:1.95rem;font-weight:800}
+header.hero p{margin:.2rem auto;color:#dbeafe;font-size:.97rem;max-width:560px}
+header.hero .meta{color:#cdd7ea;font-size:.85rem;margin-top:.7rem;display:flex;gap:1.1rem;justify-content:center;flex-wrap:wrap}
+header.hero .meta b{color:#fff;font-weight:600}
+main{max-width:960px;margin:0 auto;padding:1rem}
+section{padding:.4rem 0}
+h2{margin-top:2.4rem;padding-bottom:.35rem;font-size:1.3rem;border-bottom:2px solid var(--line);color:var(--accent2)}
+h3{margin:1.4rem 0 .4rem;font-size:1.05rem;color:var(--accent)}
+p.sub{color:var(--muted);font-size:.95rem;margin:.3rem 0 1rem;max-width:700px}
+svg{width:100%;height:auto;display:block;margin:.6rem 0;border-radius:8px}
+.grid{display:grid;grid-template-columns:1fr;gap:.4rem}
+table{border-collapse:collapse;width:100%;margin:.7rem 0 1.2rem;font-size:.9rem;background:var(--card);
+  border-radius:8px;overflow:hidden}
+thead th{background:var(--head);color:#cdd7ea;text-align:left;padding:.5rem .65rem;font-weight:600}
+th.num,td.num{text-align:right;font-variant-numeric:tabular-nums}
+td{padding:.45rem .65rem;border-top:1px solid var(--line);color:var(--text)}
+td.rank{color:var(--muted);width:28px} td.num{color:var(--muted)} td.lead{font-weight:600}
+tbody tr:nth-child(odd){background:rgba(255,255,255,.02)}
+tbody tr:hover{background:rgba(76,195,138,.08)}
+details{margin:.5rem 0} summary{color:var(--muted);cursor:pointer;font-size:.9rem;padding:.3rem 0}
+.note{color:var(--text);font-size:.95rem;line-height:1.65} .note b{color:var(--accent)}
+.pill{display:inline-block;background:var(--head);border:1px solid var(--line);border-radius:999px;
+  padding:3px 11px;font-size:12px;color:#cdd7ea;margin:2px 4px 2px 0}
+footer{margin:3rem 0 1rem;text-align:center;color:var(--muted);font-size:.8rem;padding:1.5rem 1rem 0;border-top:1px solid var(--line)}
+a{color:#7cb8ff;text-decoration:none} a:hover{text-decoration:underline}
 """
 
 
@@ -64,9 +66,9 @@ def _ratings_table(elo, tour, surface, asof, n=10) -> str:
     for i, r in enumerate(rows, 1):
         trs.append(f"<tr><td class='rank'>{i}</td><td class='lead'>{r.name}</td>"
                    f"<td class='num'>{r.blended:.0f}</td><td class='num'>{r.surface:.0f}</td></tr>")
-    return (f"<div class='card'><h3>{tour.upper()} — current {surface.lower()} form</h3>"
-            f"<table><thead><tr><th></th><th>Player</th><th class='num'>Blended</th>"
-            f"<th class='num'>{surface}</th></tr></thead><tbody>{''.join(trs)}</tbody></table></div>")
+    return (f"<h3>{tour.upper()} — current {surface.lower()} form</h3>"
+            f"<table><thead><tr><th></th><th>Player</th><th class='num'>Blended Elo</th>"
+            f"<th class='num'>{surface} Elo</th></tr></thead><tbody>{''.join(trs)}</tbody></table>")
 
 
 def build(draw_size: int = 32) -> str:
@@ -103,33 +105,32 @@ def build(draw_size: int = 32) -> str:
     n_total = sum(raw[t]["validation"]["n_eval"] for t in raw)
     atp_v, wta_v = raw["atp"]["validation"], raw["wta"]["validation"]
 
+    proj = "".join(proj_sections)
     html = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tennis Model — ATP & WTA prediction engine</title>
-<meta name="description" content="Surface-weighted Elo predictions for ATP & WTA tennis, with a path-to-the-final draw projection and an honest market/CLV benchmark.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+<title>🎾 Tennis — ML Predictions (ATP & WTA)</title>
+<meta name="description" content="Surface-weighted Elo predictions for ATP & WTA tennis: Grand Slam path-to-the-final projections and an honest market/CLV benchmark.">
 <style>{CSS}</style></head>
-<body><div class="wrap">
+<body>
 
-<header>
-  <div class="eyebrow">ATP · WTA · surface-weighted Elo</div>
-  <h1>Tennis prediction model</h1>
-  <p class="lede">Ratings that beat the official rankings, path-to-the-final draw projections,
-  and an honest benchmark against the betting market.</p>
+<header class="hero">
+  <h1>🎾 Tennis — ML Predictions</h1>
+  <p>Surface-weighted Elo for ATP &amp; WTA — Grand Slam path-to-the-final projections and an honest market benchmark.</p>
   <div class="meta">
     <span>Data through <b>{_fmt_date(asof)}</b></span>
     <span>Next major <b>{slam.label}</b></span>
-    <span><b>360k+</b> matches, both tours</span>
+    <span><b>360k+</b> matches · both tours</span>
   </div>
 </header>
 
+<main>
+
 <section id="scorecard">
   <h2>How good is it?</h2>
-  <p class="sub">Two benchmarks, held out from training. Green marks the winner of each row.</p>
+  <p class="sub">Two benchmarks, held out from training. Gold marks the winner of each row.</p>
   {scorecard}
-  <p class="note" style="margin-top:16px">
+  <p class="note">
   <b>Versus the ranking</b> — surface-weighted Elo beats the official ATP/WTA ranking on held-out
   matches (ATP {atp_v['elo']['log_loss']} vs {atp_v['ranking_logistic']['log_loss']} log-loss;
   WTA {wta_v['elo']['log_loss']} vs {wta_v['ranking_logistic']['log_loss']}).
@@ -144,24 +145,24 @@ def build(draw_size: int = 32) -> str:
   <p class="sub">Monte Carlo bracket simulation on {surf.lower()} (ATP best-of-5, WTA best-of-3) — {when}.
   Field seeded by current rating, illustrative until the official draw is published. This view rolls
   to the next Grand Slam automatically once each one finishes.</p>
-  <div class="grid2">{''.join(proj_sections)}</div>
+  <div class="grid">{proj}</div>
 </section>
 
 <section id="form">
   <h2>Current {surf.lower()} form</h2>
   <p class="sub">Top of each tour by blended (overall + {surf.lower()}) Elo, active in the last 12 months.</p>
-  <div class="grid2">{''.join(rating_cards)}</div>
+  {''.join(rating_cards)}
 </section>
 
 <section id="how">
-  <h2>How it works</h2>
+  <h2>How to read this</h2>
   <p class="note">
   Every match in tour history is replayed in order, updating each player's <b>overall</b> and
   <b>per-surface</b> Elo. A dynamic K-factor lets newcomers move fast and veterans stay stable;
   an inactivity decay keeps ratings current through injuries and off-seasons. A match probability
-  is the logistic of the blended rating gap. Draw projections Monte-Carlo the bracket; the market
-  benchmark joins bookmaker closing odds and measures closing-line value (CLV) — the honest measure,
-  since single matches are high variance.</p>
+  is the logistic of the blended rating gap. The projection Monte-Carlos the bracket to get each
+  player's <b>path to the final</b>; the scorecard's market column joins bookmaker closing odds and
+  measures closing-line value (CLV) — the honest measure, since single matches are high variance.</p>
   <div style="margin-top:14px">
     <span class="pill">surface-weighted Elo</span><span class="pill">inactivity decay</span>
     <span class="pill">Monte Carlo brackets</span><span class="pill">de-vigged market odds</span>
@@ -169,13 +170,15 @@ def build(draw_size: int = 32) -> str:
   </div>
 </section>
 
+</main>
+
 <footer>
   <p>Built with surface-weighted Elo. Match data: <a href="https://github.com/LuckyLoser91/TennisCourtLog">TennisCourtLog</a>
-  (a live mirror of Jeff Sackmann's format). Odds: <a href="http://www.tennis-data.co.uk">tennis-data.co.uk</a>.
+  (a live mirror of Jeff Sackmann's format). Odds: <a href="http://www.tennis-data.co.uk">tennis-data.co.uk</a>.<br>
   Not affiliated with the ATP, WTA, or Wimbledon. For research, not betting advice.</p>
 </footer>
 
-</div></body></html>"""
+</body></html>"""
 
     os.makedirs(DOCS, exist_ok=True)
     with open(os.path.join(DOCS, "index.html"), "w") as f:

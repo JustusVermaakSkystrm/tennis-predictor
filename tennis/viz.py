@@ -58,6 +58,49 @@ def odds_svg(res: DrawResult, *, top: int = 16, title: str = "Title odds",
     return "\n".join(parts)
 
 
+def path_svg(res: DrawResult, *, top: int = 8, title: str = "Path to the final") -> str:
+    """Round-by-round reach-probability heatmap for the top contenders.
+
+    Rows = players (by title odds); columns = rounds (R32 … Final … Champion).
+    Each cell is the probability of REACHING that round, tinted by magnitude — so you
+    read each player's survival path decaying left→right across the draw."""
+    order = sorted(res.reach.items(), key=lambda kv: kv[1].get("W", 0), reverse=True)[:top]
+    if not order:
+        return "<svg/>"
+    rounds = res.rounds
+    labels = ["Champ" if r == "W" else r for r in rounds]
+    pad, top_pad, label_w, cw, ch = 16, 64, 168, 60, 30
+    W = pad * 2 + label_w + len(rounds) * cw
+    H = top_pad + (len(order) + 1) * ch + 6
+
+    parts = [f'<svg viewBox="0 0 {W} {H}" xmlns="http://www.w3.org/2000/svg">', CSS,
+             f'<rect class="bg" x="0" y="0" width="{W}" height="{H}" rx="12"/>',
+             f'<text class="txt" x="{pad}" y="30" font-size="20" font-weight="700">{_esc(title)}</text>',
+             f'<text class="mut" x="{pad}" y="50" font-size="13">probability of reaching each round</text>']
+    # column headers
+    hy = top_pad
+    for ci, lab in enumerate(labels):
+        x = pad + label_w + ci * cw
+        parts.append(f'<text class="mut" x="{x+cw/2}" y="{hy}" font-size="11" text-anchor="middle">{lab}</text>')
+    # rows
+    for ri, (key, reach) in enumerate(order):
+        y = top_pad + 8 + ri * ch
+        name = res.names.get(key, key.split(":", 1)[-1])
+        parts.append(f'<text class="txt" x="{pad}" y="{y+19}" font-size="13">{ri+1}. {_esc(name)}</text>')
+        for ci, r in enumerate(rounds):
+            x = pad + label_w + ci * cw
+            p = reach.get(r, 0.0)
+            op = 0.08 + 0.92 * p           # faint→solid
+            tcls = "txt" if p >= 0.18 else "mut"
+            parts.append(f'<rect x="{x+3}" y="{y+3}" width="{cw-6}" height="{ch-6}" rx="4" '
+                         f'style="fill:var(--accent,#2f81f7);fill-opacity:{op:.3f}"/>')
+            txt = f"{p*100:.0f}" if p >= 0.005 else "·"
+            parts.append(f'<text class="{tcls}" x="{x+cw/2}" y="{y+19}" font-size="12" '
+                         f'text-anchor="middle" font-weight="600">{txt}</text>')
+    parts.append('</svg>')
+    return "\n".join(parts)
+
+
 def scorecard_svg(cards: list[dict], *, title: str = "Model scorecard") -> str:
     """Render a metric scorecard. Each card: {tour, rows:[(label, model, bench, better)]}.
     `better` in {'low','high'} marks which side wins; the winner is tinted."""

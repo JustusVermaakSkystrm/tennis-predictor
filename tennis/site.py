@@ -92,9 +92,11 @@ def build(draw_size: int = 32) -> str:
         fav = ", ".join(f"{n} {w*100:.0f}%" for n, w, _, _ in res.champion_table(2))
         odds = viz.odds_svg(res, top=10, title=label,
                             subtitle=f"{surf} · Bo{bo} · {res.draw_size}-draw · {res.n_sims:,} sims")
+        path = viz.path_svg(res, top=8, title=f"{label} — path to the final")
         bracket = viz.bracket_svg(res, slots, title=f"{label} — seeded bracket")
         proj_sections.append(
-            f"<div><div>{odds}</div><details><summary>seeded bracket (top {draw_size})</summary>{bracket}</details>"
+            f"<div><div>{odds}</div><div style='margin-top:14px'>{path}</div>"
+            f"<details><summary>seeded bracket (top {draw_size})</summary>{bracket}</details>"
             f"<p class='note' style='margin-top:8px'>Favourites: <b>{fav}</b></p></div>")
         rating_cards.append(_ratings_table(elo, tour, surf, asof))
 

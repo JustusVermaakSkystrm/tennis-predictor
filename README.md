@@ -93,6 +93,10 @@ a tour-prefixed id-or-name). Watch out for its quirks, handled in `dataset.py`:
 - three date formats coexist (`19900101`, `2024-12-29`, `2026/1/4`)
 - era-mixed `tourney_level` labels (old `A`/`G` codes vs modern `ATP250`/`Masters 1000`)
 
+**Live fixtures** for the upcoming-matches section come from ESPN's free tennis
+scoreboard API (`tennis/schedule.py`) — the forward schedule the results archive
+doesn't carry. Each known matchup is priced off current Elo on the season's surface.
+
 For the **serve model (v2)** we'll overlay richer sources that retain serve stats +
 ids: `Tennismylife/TML-Database` (ATP, 1968–2026, + `indoor` flag) and
 `AndreaQuirozO/WTA_Players` (WTA Sackmann clone, 1920–2023).
@@ -129,6 +133,7 @@ flips correctly by surface (Alcaraz on grass → Sinner on hard).
 - [x] Draw (bracket) simulator + SVG `viz.py` (32/64/128) + auto-rolling Slam projection
 - [x] tennis-data.co.uk odds → market / CLV benchmark + model scorecard
 - [x] GitHub Pages site + scheduled auto-update workflow
+- [x] Live upcoming-matches feed (ESPN) with per-match model win probabilities
 - [ ] Serve-based hierarchical model (point→game→set→match Markov) for set/game/handicap markets; Bo3 vs Bo5 — needs serve-stat sources (TML-Database / AndreaQuirozO)
 - [ ] Ingest the *official* draw when published (replace seed-by-rating with real slots)
 - [ ] Lower-tier (Challenger/ITF) odds to test the real edge thesis

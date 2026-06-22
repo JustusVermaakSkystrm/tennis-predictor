@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import os
 
-from . import calendar, engine, viz
+from . import calendar, engine, market, schedule, viz
 from .simulator import seeded_slot_order, simulate
 
 DOCS = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "docs")
@@ -71,6 +71,84 @@ def _ratings_table(elo, tour, surface, asof, n=10) -> str:
             f"<th class='num'>{surface} Elo</th></tr></thead><tbody>{''.join(trs)}</tbody></table>")
 
 
+def _name_resolver(elo, tour):
+    """Map any 'First Last' name to a rated player key (reusing the market name-bridge)."""
+    idx: dict[str, str] = {}
+    for k in elo.players:
+        if k.startswith(tour + ":"):
+            for cand in market.model_namekeys(k.split(":", 1)[1]):
+                idx.setdefault(cand, k)
+    def resolve(name: str):
+        for c in market.model_namekeys(name):
+            if c in idx:
+                return idx[c]
+        return None
+    return resolve
+
+
+def _fmt_when(iso: str) -> str:
+    try:
+        from datetime import datetime
+        dt = datetime.strptime(iso, "%Y-%m-%dT%H:%MZ")
+        return dt.strftime("%-d %b %H:%M") + "Z"
+    except Exception:
+        return (iso or "")[:10]
+
+
+def _upcoming_section(engines: dict, surface: str, *, cap: int = 24) -> str:
+    """Football-style 'upcoming matches' table with model win probabilities.
+
+    Live fixtures come from ESPN; we price each one off current Elo on the inferred
+    surface. Resilient: if the feed is down or nothing resolves, the section is omitted."""
+    try:
+        fixtures = schedule.all_fixtures()
+    except Exception:
+        return ""
+    if not fixtures:
+        return ""
+    resolvers = {t: _name_resolver(e, t) for t, e in engines.items()}
+    main, qual = [], []
+    for f in fixtures:
+        res = resolvers.get(f.tour)
+        if res is None:
+            continue
+        ka, kb = res(f.player_a), res(f.player_b)
+        if not ka or not kb:
+            continue
+        p = engines[f.tour].win_prob(ka, kb, surface)   # P(player_a beats player_b)
+        rec = (f, p)
+        (qual if "Qualif" in f.round else main).append(rec)
+    picks = (main or qual)
+    picks.sort(key=lambda r: r[0].date)        # soonest first
+    picks = picks[:cap]
+    if not picks:
+        return ""
+
+    rows = []
+    for f, p in picks:
+        fav_a = p >= 0.5
+        a = (f"<b style='color:var(--accent)'>{f.player_a}</b>" if fav_a else f.player_a)
+        b = (f"<b style='color:var(--accent)'>{f.player_b}</b>" if not fav_a else f.player_b)
+        rows.append(
+            f"<tr><td class='num' style='text-align:left;color:var(--muted)'>{_fmt_when(f.date)}</td>"
+            f"<td style='color:var(--muted)'>{f.tournament} · {f.round}</td>"
+            f"<td class='lead' style='text-align:right'>{a}</td>"
+            f"<td class='num'>{p*100:.0f}%</td><td class='num' style='color:var(--muted)'>{(1-p)*100:.0f}%</td>"
+            f"<td class='lead'>{b}</td><td>{_TOUR_BADGE[f.tour]}</td></tr>")
+    note = "" if main else " <em>(qualifying — main draws not yet posted)</em>"
+    return (f"<section id='upcoming'><h2>Upcoming matches — win probabilities</h2>"
+            f"<p class='sub'>Live fixtures from ESPN, priced by the model on {surface.lower()} "
+            f"(surface inferred from the calendar). Favourite in green. Showing the next {len(picks)} "
+            f"matches with both players rated.{note}</p>"
+            f"<table><thead><tr><th style='text-align:left'>When</th><th>Tournament · round</th>"
+            f"<th class='num'>Player A</th><th class='num'>win</th><th class='num'>win</th>"
+            f"<th>Player B</th><th>Tour</th></tr></thead><tbody>{''.join(rows)}</tbody></table></section>")
+
+
+_TOUR_BADGE = {"atp": "<span class='pill' style='padding:1px 8px'>ATP</span>",
+               "wta": "<span class='pill' style='padding:1px 8px'>WTA</span>"}
+
+
 def build(draw_size: int = 32) -> str:
     """Build the full page HTML and write docs/index.html. Returns the HTML."""
     from scripts.scorecard import build as scorecard_build
@@ -83,8 +161,10 @@ def build(draw_size: int = 32) -> str:
             else f"starts {slam.start.strftime('%-d %b %Y')}")
 
     proj_sections, rating_cards, asof = [], [], 0
+    engines = {}
     for tour, bo, label in (("atp", 5, "ATP — Men's Singles"), ("wta", 3, "WTA — Women's Singles")):
         elo, df = engine.fit(tour)
+        engines[tour] = elo
         asof = int(df["tourney_date"].max())
         active = (asof // 10000 - 1) * 10000 + (asof % 10000)
         field = [r.key for r in engine.current_table(elo, surf, tour=tour,
@@ -104,6 +184,7 @@ def build(draw_size: int = 32) -> str:
 
     n_total = sum(raw[t]["validation"]["n_eval"] for t in raw)
     atp_v, wta_v = raw["atp"]["validation"], raw["wta"]["validation"]
+    upcoming = _upcoming_section(engines, surf)
 
     proj = "".join(proj_sections)
     html = f"""<!doctype html>
@@ -147,6 +228,8 @@ def build(draw_size: int = 32) -> str:
   to the next Grand Slam automatically once each one finishes.</p>
   <div class="grid">{proj}</div>
 </section>
+
+{upcoming}
 
 <section id="form">
   <h2>Current {surf.lower()} form</h2>

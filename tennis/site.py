@@ -175,10 +175,11 @@ def build(draw_size: int = 32) -> str:
         odds = viz.odds_svg(res, top=10, title=label,
                             subtitle=f"{surf} · Bo{bo} · {res.draw_size}-draw · {res.n_sims:,} sims")
         path = viz.path_svg(res, top=8, title=f"{label} — path to the final")
-        bracket = viz.bracket_svg(res, slots, title=f"{label} — seeded bracket")
+        # NB: no bracket tree — free feeds expose the matchups but not draw-slot
+        # positions, so a real tree can't be rebuilt and a rating-seeded one would be
+        # fabricated. Real matchups live in the Upcoming-matches section instead.
         proj_sections.append(
             f"<div><div>{odds}</div><div style='margin-top:14px'>{path}</div>"
-            f"<details><summary>seeded bracket (top {draw_size})</summary>{bracket}</details>"
             f"<p class='note' style='margin-top:8px'>Favourites: <b>{fav}</b></p></div>")
         rating_cards.append(_ratings_table(elo, tour, surf, asof))
 
@@ -222,10 +223,13 @@ def build(draw_size: int = 32) -> str:
 </section>
 
 <section id="slam">
-  <h2>{slam.label} — projection</h2>
-  <p class="sub">Monte Carlo bracket simulation on {surf.lower()} (ATP best-of-5, WTA best-of-3) — {when}.
-  Field seeded by current rating, illustrative until the official draw is published. This view rolls
-  to the next Grand Slam automatically once each one finishes.</p>
+  <h2>{slam.label} — title projection</h2>
+  <p class="sub">Each player's title and round-by-round chances from a Monte Carlo simulation on
+  {surf.lower()} (ATP best-of-5, WTA best-of-3) — {when}. This is a <b>strength-based</b> projection
+  (balanced seeding by rating) — a "who's most likely to win" power ranking, not the actual draw:
+  public feeds publish the matchups but not their bracket positions, so the real tree can't be
+  rebuilt. The <b>actual matchups</b>, priced live, are in <a href="#upcoming">Upcoming matches</a>
+  below. Rolls to the next Grand Slam automatically once each finishes.</p>
   <div class="grid">{proj}</div>
 </section>
 
